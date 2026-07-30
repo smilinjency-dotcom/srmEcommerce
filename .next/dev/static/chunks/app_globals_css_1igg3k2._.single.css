@@ -1,0 +1,52 @@
+/* [project]/app/globals.css [app-client] (css) */
+:root {
+  --color-primary: #6c63ff;
+  --color-primary-foreground: #fff;
+  --color-secondary: #f0edff;
+  --color-secondary-foreground: #3d3799;
+  --color-accent: #ff6584;
+  --color-background: #f8f7ff;
+  --color-foreground: #1a1833;
+  --color-surface: #fff;
+  --color-muted: #edeaf7;
+  --color-border: #ddd9f3;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+}
+
+@theme inline {
+  /* Brand */
+  --color-primary:              var(--color-primary);
+  --color-primary-foreground:   var(--color-primary-foreground);
+  --color-secondary:            var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-accent:               var(--color-accent);
+
+  /* Surfaces */
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-surface:    var(--color-surface);
+  --color-muted:      var(--color-muted);
+
+  /* Semantic */
+  --color-border:   var(--color-border);
+  --color-success:  var(--color-success);
+  --color-error:    var(--color-error);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, :before, :after {
+  box-sizing: border-box;
+}
+
+/*# sourceMappingURL=app_globals_css_1igg3k2._.single.css.map*/
