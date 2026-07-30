@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
+/* ─── Design System: Color Tokens ──────────────────────────────────────────
+   These are the ONLY place hex values are ever written.
+   Every component must consume colors through these CSS variables
+   or their Tailwind class equivalents (bg-primary, text-foreground, etc.).
+   ──────────────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand */
+  --color-primary:            #6C63FF;   /* indigo-violet */
+  --color-primary-foreground: #FFFFFF;
+
+  --color-secondary:            #F0EDFF; /* soft lavender tint */
+  --color-secondary-foreground: #3D3799;
+
+  --color-accent:             #FF6584;   /* coral-pink */
+
+  /* Surfaces */
+  --color-background: #F8F7FF;
+  --color-foreground: #1A1833;
+  --color-surface:    #FFFFFF;
+  --color-muted:      #EDEAF7;
+
+  /* Semantic */
+  --color-border:   #DDD9F3;
+  --color-success:  #22C55E;
+  --color-error:    #EF4444;
 }
 
+/* ─── Tailwind v4 @theme ────────────────────────────────────────────────────
+   Map every token into Tailwind's design-token namespace so utility classes
+   like bg-primary, text-secondary-foreground, border-border, etc. work.
+   ──────────────────────────────────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Brand */
+  --color-primary:              var(--color-primary);
+  --color-primary-foreground:   var(--color-primary-foreground);
+  --color-secondary:            var(--color-secondary);
+  --color-secondary-foreground: var(--color-secondary-foreground);
+  --color-accent:               var(--color-accent);
+
+  /* Surfaces */
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-surface:    var(--color-surface);
+  --color-muted:      var(--color-muted);
+
+  /* Semantic */
+  --color-border:   var(--color-border);
+  --color-success:  var(--color-success);
+  --color-error:    var(--color-error);
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base Styles ───────────────────────────────────────────────────────── */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
