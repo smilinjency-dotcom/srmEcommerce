@@ -44,8 +44,19 @@ export async function generateMetadata({
   const product = await getProduct(slug);
   if (!product) return { title: "Product not found" };
   return {
-    title: `${product.name} — SRMStore`,
+    title: product.name,
     description: product.description,
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      images: [{ url: product.image_url, alt: product.name }],
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: product.name,
+      description: product.description,
+      images: [product.image_url],
+    },
   };
 }
 
