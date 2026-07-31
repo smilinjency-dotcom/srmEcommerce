@@ -43,6 +43,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "www.reliancedigital.in",
+      },
+      {
+        protocol: "https",
+        hostname: "i.dummyjson.com",
+      },
+      { 
+        protocol: "https",
+        hostname: "cdn.jiostore.online",
+      },
     ],
   },
 };
