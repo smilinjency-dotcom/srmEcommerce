@@ -1,78 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (duplicated from route.ts to keep this handler self-contained)
 // ---------------------------------------------------------------------------
-
-export interface Product {
+interface Product {
   id: string;
   name: string;
   description: string;
-  price: number; // in INR (paise-free integer, e.g. 1299 = ₹1 299)
+  price: number;
   image_url: string;
   category: string;
   slug: string;
 }
 
 // ---------------------------------------------------------------------------
-// Data layer
+// In-memory data — mirrors the seed in /api/products/route.ts
+// When you swap to Supabase, replace the body of `findBySlug` with a DB query.
 // ---------------------------------------------------------------------------
-// ⚠️  SWAP POINT: replace the body of `fetchProductBySlug` with a Supabase
-// query when you're ready.  The route handler below never touches raw data.
-//
-//   async function fetchProductBySlug(slug: string): Promise<Product | null> {
-//     const { data, error } = await supabase
-//       .from("products")
-//       .select("*")
-//       .eq("slug", slug)
-//       .single();
-//     if (error) throw error;
-//     return data as Product | null;
-//   }
-// ---------------------------------------------------------------------------
-
-async function fetchProductBySlug(slug: string): Promise<Product | null> {
-  // TODO: replace with a real Supabase query (see swap point above)
-  return IN_MEMORY_PRODUCTS.find((p) => p.slug === slug) ?? null;
-}
-
-// ---------------------------------------------------------------------------
-// Route handler
-// ---------------------------------------------------------------------------
-
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
-  try {
-    const { slug } = await params;
-    const product = await fetchProductBySlug(slug);
-
-    if (!product) {
-      return NextResponse.json(
-        { error: `Product with slug "${slug}" not found.` },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ product }, { status: 200 });
-  } catch (error) {
-    console.error("[GET /api/products/[slug]]", error);
-    return NextResponse.json(
-      { error: "Failed to fetch product." },
-      { status: 500 }
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// In-memory seed data — local copy of the same 8 products in
-// app/api/products/route.ts.  Do not import from there; this copy keeps the
-// route self-contained and is the only thing that changes when Supabase is
-// wired up.
-// ---------------------------------------------------------------------------
-
-const IN_MEMORY_PRODUCTS: Product[] = [
+const PRODUCTS: Product[] = [
   {
     id: "prod_001",
     name: "AuraSound Pro Wireless Headphones",
@@ -154,3 +99,33 @@ const IN_MEMORY_PRODUCTS: Product[] = [
     slug: "baristaplus-espresso-machine",
   },
 ];
+
+async function findBySlug(slug: string): Promise<Product | undefined> {
+  // TODO: replace with a Supabase query, e.g.:
+  //   const { data } = await supabase.from("products").select("*").eq("slug", slug).single();
+  //   return data ?? undefined;
+  return PRODUCTS.find((p) => p.slug === slug);
+}
+
+// ---------------------------------------------------------------------------
+// Route handler
+// ---------------------------------------------------------------------------
+
+export async function GET(
+  _req: Request,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const product = await findBySlug(params.slug);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found." }, { status: 404 });
+    }
+    return NextResponse.json({ product }, { status: 200 });
+  } catch (error) {
+    console.error("[GET /api/products/[slug]]", error);
+    return NextResponse.json(
+      { error: "Failed to fetch product." },
+      { status: 500 }
+    );
+  }
+}
