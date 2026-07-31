@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search, SlidersHorizontal, X, PackageSearch } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -37,8 +37,8 @@ function SkeletonCard() {
   );
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
-export default function ProductsPage() {
+// ── Inner page (uses useSearchParams — must live inside Suspense) ────────────
+function ProductsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -383,5 +383,38 @@ export default function ProductsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// ── Suspense wrapper ─────────────────────────────────────────────────────────
+// useSearchParams() requires a Suspense boundary during static generation.
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col bg-background">
+          <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm animate-pulse"
+                  aria-hidden="true"
+                >
+                  <div className="aspect-square w-full bg-muted" />
+                  <div className="flex flex-col gap-3 p-4">
+                    <div className="h-4 w-3/4 rounded-full bg-muted" />
+                    <div className="h-4 w-1/2 rounded-full bg-muted" />
+                    <div className="mt-auto h-10 rounded-full bg-muted" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   );
 }
