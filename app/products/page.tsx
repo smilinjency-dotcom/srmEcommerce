@@ -6,7 +6,7 @@ import { Search, SlidersHorizontal, X, PackageSearch } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import type { Product } from "@/app/api/products/route";
+import type { Product } from "@/types/supabase";
 
 // ── Category list (must match categories in the API seed data) ──────────────
 const CATEGORIES = [
