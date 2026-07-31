@@ -10,10 +10,12 @@ import {
   LogIn,
   LogOut,
   User as UserIcon,
+  ShieldCheck,
 } from "lucide-react";
 import { signInWithGoogle, signOutUser } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/contexts/CartContext";
+import { isAdmin } from "@/lib/isAdmin";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -92,6 +94,8 @@ export default function Navbar() {
         </button>
       );
     }
+
+    const userIsAdmin = Boolean(user && isAdmin(user.email));
 
     // Signed in → avatar + dropdown
     return (
@@ -172,6 +176,26 @@ export default function Navbar() {
             {/* Divider */}
             <div className="my-1 h-px bg-border" role="separator" />
 
+            {/* Admin option if authorized */}
+            {userIsAdmin && (
+              <>
+                <a
+                  href="/admin"
+                  id="navbar-dropdown-admin-link"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5
+                    text-sm font-semibold text-primary
+                    transition-colors duration-150
+                    hover:bg-secondary
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <ShieldCheck size={16} aria-hidden="true" className="shrink-0" />
+                  Admin Panel
+                </a>
+                <div className="my-1 h-px bg-border" role="separator" />
+              </>
+            )}
+
             {/* Sign out */}
             <button
               id="navbar-sign-out-btn"
@@ -231,6 +255,20 @@ export default function Navbar() {
               </a>
             </li>
           ))}
+          {user && isAdmin(user.email) && (
+            <li>
+              <a
+                href="/admin"
+                id="navbar-admin-link"
+                className="relative inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:opacity-85
+                           after:absolute after:-bottom-0.5 after:left-0 after:h-0.5 after:w-0 after:rounded-full
+                           after:bg-primary after:transition-[width] after:duration-300 hover:after:w-full"
+              >
+                <ShieldCheck size={16} aria-hidden="true" />
+                Admin
+              </a>
+            </li>
+          )}
         </ul>
 
         {/* ── Right: Auth + Cart + Hamburger ── */}
@@ -301,6 +339,20 @@ export default function Navbar() {
               </a>
             </li>
           ))}
+          {user && isAdmin(user.email) && (
+            <li>
+              <a
+                href="/admin"
+                id="mobile-menu-admin-link"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-primary
+                           transition-colors hover:bg-secondary"
+              >
+                <ShieldCheck size={16} aria-hidden="true" />
+                Admin Panel
+              </a>
+            </li>
+          )}
 
           {/* Auth action in mobile menu */}
           {!loading && (
