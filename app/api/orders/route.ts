@@ -151,11 +151,20 @@ export async function POST(request: NextRequest) {
 
   if (!shipping) return err("Missing required field: shipping", 400);
   const { name, address, city, postal_code, phone } = shipping;
-  if (!name)        return err("Missing required field: shipping.name", 400);
-  if (!address)     return err("Missing required field: shipping.address", 400);
-  if (!city)        return err("Missing required field: shipping.city", 400);
-  if (!postal_code) return err("Missing required field: shipping.postal_code", 400);
-  if (!phone)       return err("Missing required field: shipping.phone", 400);
+
+  if (!name || !name.trim()) return err("Missing required field: shipping.name", 400);
+  if (/\d/.test(name)) return err("shipping.name cannot contain numbers", 400);
+
+  if (!address || !address.trim()) return err("Missing required field: shipping.address", 400);
+
+  if (!city || !city.trim()) return err("Missing required field: shipping.city", 400);
+  if (/\d/.test(city)) return err("shipping.city cannot contain numbers", 400);
+
+  if (!postal_code || !postal_code.trim()) return err("Missing required field: shipping.postal_code", 400);
+  if (!/^\d{6}$/.test(postal_code.trim())) return err("shipping.postal_code must be a 6-digit integer", 400);
+
+  if (!phone || !phone.trim()) return err("Missing required field: shipping.phone", 400);
+  if (!/^\d{10}$/.test(phone.trim())) return err("shipping.phone must contain numbers only (10 digits)", 400);
 
   // ── Compute total ─────────────────────────────────────────────────────────
   const total_amount = cart_items.reduce(

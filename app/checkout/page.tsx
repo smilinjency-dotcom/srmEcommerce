@@ -66,24 +66,43 @@ type PaymentState =
 function validate(fields: FormFields): FormErrors {
   const errors: FormErrors = {};
 
-  if (!fields.name.trim())
+  if (!fields.name.trim()) {
     errors.name = "Full name is required.";
+  } else if (/\d/.test(fields.name)) {
+    errors.name = "Full name cannot contain numbers.";
+  } else if (!/^[a-zA-Z\s.'-]+$/.test(fields.name.trim())) {
+    errors.name = "Full name can only contain letters and spaces.";
+  }
 
-  if (!fields.address.trim())
+  if (!fields.address.trim()) {
     errors.address = "Street address is required.";
+  }
 
-  if (!fields.city.trim())
+  if (!fields.city.trim()) {
     errors.city = "City is required.";
+  } else if (/\d/.test(fields.city)) {
+    errors.city = "City name cannot contain numbers.";
+  } else if (!/^[a-zA-Z\s.'-]+$/.test(fields.city.trim())) {
+    errors.city = "City can only contain letters and spaces.";
+  }
 
-  if (!fields.postal_code.trim())
+  if (!fields.postal_code.trim()) {
     errors.postal_code = "Postal code is required.";
-  else if (!/^\d{6}$/.test(fields.postal_code.trim()))
-    errors.postal_code = "Enter a valid 6-digit postal code.";
+  } else if (/\D/.test(fields.postal_code.trim())) {
+    errors.postal_code = "Postal code must contain numbers/integers only.";
+  } else if (!/^\d{6}$/.test(fields.postal_code.trim())) {
+    errors.postal_code = "Postal code must be a 6-digit integer.";
+  }
 
-  if (!fields.phone.trim())
+  if (!fields.phone.trim()) {
     errors.phone = "Phone number is required.";
-  else if (!/^[6-9]\d{9}$/.test(fields.phone.trim()))
-    errors.phone = "Enter a valid 10-digit Indian mobile number.";
+  } else if (/\D/.test(fields.phone.trim())) {
+    errors.phone = "Phone number must contain numbers only (no symbols or letters).";
+  } else if (fields.phone.trim().length !== 10) {
+    errors.phone = "Phone number must be exactly 10 digits.";
+  } else if (!/^[6-9]\d{9}$/.test(fields.phone.trim())) {
+    errors.phone = "Enter a valid 10-digit mobile number starting with 6-9.";
+  }
 
   return errors;
 }
@@ -190,9 +209,10 @@ export default function CheckoutPage() {
   // Persisted Razorpay popup config so we can reopen the *same* order on retry
   const rzpConfigRef = useRef<Record<string, unknown> | null>(null);
 
-  function set(key: keyof FormFields) {
+  function set(key: keyof FormFields, sanitize?: (val: string) => string) {
     return (value: string) => {
-      setFields((prev) => ({ ...prev, [key]: value }));
+      const cleanValue = sanitize ? sanitize(value) : value;
+      setFields((prev) => ({ ...prev, [key]: cleanValue }));
       if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
     };
   }
@@ -750,7 +770,7 @@ export default function CheckoutPage() {
                   id={`${uid}-name`}
                   label="Full name"
                   value={fields.name}
-                  onChange={set("name")}
+                  onChange={set("name", (val) => val.replace(/[0-9]/g, ""))}
                   error={errors.name}
                   placeholder="Ravi Kumar"
                   autoComplete="name"
@@ -769,7 +789,7 @@ export default function CheckoutPage() {
                     id={`${uid}-city`}
                     label="City"
                     value={fields.city}
-                    onChange={set("city")}
+                    onChange={set("city", (val) => val.replace(/[0-9]/g, ""))}
                     error={errors.city}
                     placeholder="Chennai"
                     autoComplete="address-level2"
@@ -778,7 +798,7 @@ export default function CheckoutPage() {
                     id={`${uid}-postal_code`}
                     label="Postal code"
                     value={fields.postal_code}
-                    onChange={set("postal_code")}
+                    onChange={set("postal_code", (val) => val.replace(/\D/g, ""))}
                     error={errors.postal_code}
                     placeholder="600001"
                     autoComplete="postal-code"
@@ -790,11 +810,11 @@ export default function CheckoutPage() {
                   id={`${uid}-phone`}
                   label="Phone number"
                   value={fields.phone}
-                  onChange={set("phone")}
+                  onChange={set("phone", (val) => val.replace(/\D/g, ""))}
                   error={errors.phone}
                   placeholder="9876543210"
                   autoComplete="tel"
-                  inputMode="tel"
+                  inputMode="numeric"
                   maxLength={10}
                   type="tel"
                 />
