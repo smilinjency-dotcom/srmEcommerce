@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import razorpay from "@/lib/razorpay";
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Fetch the order's total_amount from Supabase ───────────────────────
-  const { data: order, error: fetchError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: order, error: fetchError } = await (supabase as any)
     .from("orders")
     .select("id, total_amount, status")
     .eq("id", order_id)
@@ -67,7 +68,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 4. Save the Razorpay order id back to Supabase ────────────────────────
-  const { error: updateError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: updateError } = await (supabase as any)
     .from("orders")
     .update({ razorpay_order_id: rzpOrder.id })
     .eq("id", order_id);

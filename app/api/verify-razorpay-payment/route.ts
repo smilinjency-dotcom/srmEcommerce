@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 3b. Signature valid — mark the Supabase order as 'paid' ──────────────
-  const { data: order, error: updateError } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: order, error: updateError } = await (supabase as any)
     .from("orders")
     .update({
       status: "paid",

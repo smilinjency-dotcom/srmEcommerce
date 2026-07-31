@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 import type { Order, OrderItem } from "@/types/supabase";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,8 @@ async function insertOrder(
   total_amount: number,
   shipping: ShippingDetails
 ): Promise<Order> {
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("orders")
     .insert({
       user_id,
@@ -80,7 +81,8 @@ async function insertOrderItems(
     price: item.price,
   }));
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from("order_items")
     .insert(rows)
     .select();

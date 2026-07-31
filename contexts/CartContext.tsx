@@ -29,6 +29,15 @@ import {
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
+/** Safely parse a Response body as JSON; falls back to text on failure. */
+async function safeJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return await res.text().catch(() => "(empty response)");
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -125,7 +134,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ user_id: uid, product_id: productId, quantity }),
       });
       if (!res.ok) {
-        console.error("[CartContext] addToCart failed", await res.json());
+        console.error("[CartContext] addToCart failed", await safeJson(res));
         return;
       }
       // Re-fetch to get the joined product fields
@@ -151,7 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ id: itemId, quantity }),
       });
       if (!res.ok) {
-        console.error("[CartContext] updateQuantity failed");
+        console.error("[CartContext] updateQuantity failed", await safeJson(res));
         await fetchCart(uid); // rollback
       }
     },
@@ -173,7 +182,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ id: itemId }),
       });
       if (!res.ok) {
-        console.error("[CartContext] removeFromCart failed");
+        console.error("[CartContext] removeFromCart failed", await safeJson(res));
         await fetchCart(uid); // rollback
       }
     },

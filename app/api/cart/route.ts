@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";            // anon — used for GET
+import { getAdminClient } from "@/lib/supabaseAdmin";  // service-role — used for writes
 import type { CartItem } from "@/types/supabase";
 
 // ---------------------------------------------------------------------------
@@ -82,14 +83,17 @@ export async function POST(request: NextRequest) {
     return err("quantity must be a positive integer.", 400);
   }
 
-  // Supabase upsert: on conflict (user_id, product_id) the row is updated.
-  // We use the generic (untyped) query path to side-step a known limitation
-  // in hand-written Database types where Update = Partial<Insert> triggers
-  // a "never" resolution inside the client's overloaded upsert signature.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = supabase as any;
+  // Resolve the admin client — throws if SUPABASE_SERVICE_ROLE_KEY is missing.
+  let adminClient: ReturnType<typeof getAdminClient>;
+  try {
+    adminClient = getAdminClient();
+  } catch (e) {
+    console.error("[POST /api/cart] admin client unavailable:", e);
+    return err("Cart writes are temporarily unavailable. (Service key not configured.)", 503);
+  }
 
-  const { data, error } = await client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (adminClient as any)
     .from("cart_items")
     .upsert(
       { user_id, product_id, quantity },
@@ -131,11 +135,16 @@ export async function PATCH(request: NextRequest) {
     return err("quantity must be a positive integer.", 400);
   }
 
-  // Same workaround: cast to any for the write path only.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = supabase as any;
+  let adminClient: ReturnType<typeof getAdminClient>;
+  try {
+    adminClient = getAdminClient();
+  } catch (e) {
+    console.error("[PATCH /api/cart] admin client unavailable:", e);
+    return err("Cart writes are temporarily unavailable. (Service key not configured.)", 503);
+  }
 
-  const { data, error } = await client
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (adminClient as any)
     .from("cart_items")
     .update({ quantity })
     .eq("id", id)
@@ -143,7 +152,6 @@ export async function PATCH(request: NextRequest) {
     .single();
 
   if (error) {
-    // PGRST116 → .single() found no rows
     if (error.code === "PGRST116") {
       return err("Cart item not found.", 404);
     }
@@ -172,7 +180,16 @@ export async function DELETE(request: NextRequest) {
 
   if (!id) return err("Missing required field: id", 400);
 
-  const { error, count } = await supabase
+  let adminClient: ReturnType<typeof getAdminClient>;
+  try {
+    adminClient = getAdminClient();
+  } catch (e) {
+    console.error("[DELETE /api/cart] admin client unavailable:", e);
+    return err("Cart writes are temporarily unavailable. (Service key not configured.)", 503);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error, count } = await (adminClient as any)
     .from("cart_items")
     .delete({ count: "exact" })
     .eq("id", id);
