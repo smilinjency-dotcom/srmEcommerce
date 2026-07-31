@@ -206,7 +206,7 @@ INSERT INTO products (name, description, price, image_url, category, stock, slug
 ( 'PeakFit Resistance Band Set',
   'Set of 5 latex-free resistance bands (5 kg – 40 kg) with mesh carry bag, door anchor, and ankle straps. Ideal for home workouts and physiotherapy.',
   1299,
-  'https://images.unsplash.com/photo-1598971639058-fab3c3109a03?w=600&q=80',
+  'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&q=80',
   'Sports & Fitness', 200,
   'peakfit-resistance-band-set' ),
 

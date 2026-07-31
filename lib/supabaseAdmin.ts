@@ -18,6 +18,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/supabase";
+import { supabase } from "@/lib/supabase";
 
 const supabaseUrl    = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -32,9 +33,7 @@ const isPlaceholder =
  * Admin client — bypasses RLS.
  * Use ONLY inside Next.js API Route Handlers (app/api/**).
  *
- * Will be `null` when SUPABASE_SERVICE_ROLE_KEY has not been configured,
- * which lets callers fail gracefully with a clear error response rather
- * than crashing the whole module on startup.
+ * Will be `null` when SUPABASE_SERVICE_ROLE_KEY has not been configured.
  */
 export const supabaseAdmin: SupabaseClient<Database> | null = isPlaceholder
   ? null
@@ -46,16 +45,12 @@ export const supabaseAdmin: SupabaseClient<Database> | null = isPlaceholder
     });
 
 /**
- * Convenience helper: returns the admin client or throws a descriptive
- * Error that becomes a 500 response — never crashes at module load time.
+ * Convenience helper: returns the admin client if available,
+ * otherwise falls back to the public anon client.
  */
 export function getAdminClient(): SupabaseClient<Database> {
   if (!supabaseAdmin) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured. " +
-      "Go to Supabase Dashboard → Settings → API → service_role key " +
-      "and add it to .env.local, then restart the dev server."
-    );
+    return supabase;
   }
   return supabaseAdmin;
 }

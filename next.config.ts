@@ -7,6 +7,28 @@ const nextConfig: NextConfig = {
     // sits above the Next.js project directory.
     root: path.resolve(__dirname),
   },
+
+  // ── Security headers ────────────────────────────────────────────────────
+  // COOP must be same-origin-allow-popups (not the stricter same-origin)
+  // so that Firebase signInWithPopup can call window.closed on its own
+  // popup and detect when the user closes or completes the Google flow.
+  // Without this Next.js would emit same-origin, causing the repeated
+  // "Cross-Origin-Opener-Policy policy would block the window.closed call"
+  // warnings and breaking the sign-in popup in some browsers.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+        ],
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       {
