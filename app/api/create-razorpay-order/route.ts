@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import { getAdminClient } from "@/lib/supabaseAdmin";
 import razorpay from "@/lib/razorpay";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +22,7 @@ function err(message: string, status: number) {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
+  const supabase = getAdminClient();
   // ── 1. Parse body ─────────────────────────────────────────────────────────
   let body: unknown;
   try {
@@ -54,7 +55,8 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 3. Create a Razorpay order (amount in paise = INR × 100) ─────────────
-  let rzpOrder: Awaited<ReturnType<typeof razorpay.orders.create>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rzpOrder: any;
   try {
     rzpOrder = await razorpay.orders.create({
       amount: Math.round(order.total_amount * 100), // convert INR → paise

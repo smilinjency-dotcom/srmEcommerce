@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import { getAdminClient } from "@/lib/supabaseAdmin";
 import type { Order, OrderItem } from "@/types/supabase";
 
 // ---------------------------------------------------------------------------
@@ -49,6 +49,7 @@ async function insertOrder(
   total_amount: number,
   shipping: ShippingDetails
 ): Promise<Order> {
+  const supabase = getAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("orders")
@@ -74,6 +75,7 @@ async function insertOrderItems(
   order_id: string,
   items: CartItemInput[]
 ): Promise<OrderItem[]> {
+  const supabase = getAdminClient();
   const rows = items.map((item) => ({
     order_id,
     product_id: item.product_id,
@@ -93,6 +95,7 @@ async function insertOrderItems(
 
 /** Step 3 – delete all cart_items rows belonging to the user. */
 async function clearCart(user_id: string): Promise<void> {
+  const supabase = getAdminClient();
   const { error } = await supabase
     .from("cart_items")
     .delete()

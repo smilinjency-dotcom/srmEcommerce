@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
-import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
+import { getAdminClient } from "@/lib/supabaseAdmin";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,6 +28,7 @@ function err(message: string, status: number) {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
+  const supabase = getAdminClient();
   // ── 1. Parse body ─────────────────────────────────────────────────────────
   let body: unknown;
   try {
