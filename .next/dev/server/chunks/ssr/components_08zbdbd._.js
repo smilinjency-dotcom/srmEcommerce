@@ -232,7 +232,7 @@ function Hero() {
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 "aria-hidden": "true",
-                className: "absolute inset-0 -z-10   bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,var(--color-secondary)_0%,transparent_70%)]"
+                className: "absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,var(--color-secondary)_0%,transparent_70%)]"
             }, void 0, false, {
                 fileName: "[project]/components/Hero.tsx",
                 lineNumber: 12,
@@ -240,7 +240,7 @@ function Hero() {
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 "aria-hidden": "true",
-                className: "absolute -top-40 right-0 -z-10 h-[500px] w-[500px] rounded-full   bg-primary opacity-10 blur-3xl"
+                className: "absolute -top-40 right-0 -z-10 h-[500px] w-[500px] rounded-full bg-primary opacity-10 blur-3xl"
             }, void 0, false, {
                 fileName: "[project]/components/Hero.tsx",
                 lineNumber: 19,
@@ -248,7 +248,7 @@ function Hero() {
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 "aria-hidden": "true",
-                className: "absolute bottom-0 left-10 -z-10 h-[380px] w-[380px] rounded-full   bg-accent opacity-10 blur-3xl"
+                className: "absolute bottom-0 left-10 -z-10 h-[380px] w-[380px] rounded-full bg-accent opacity-10 blur-3xl"
             }, void 0, false, {
                 fileName: "[project]/components/Hero.tsx",
                 lineNumber: 26,
@@ -258,7 +258,7 @@ function Hero() {
                 className: "mx-auto flex max-w-7xl flex-col items-center gap-8 px-4 py-28 text-center sm:px-6 sm:py-36 lg:px-8",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "inline-flex items-center gap-2 rounded-full border border-border   bg-surface px-4 py-1.5 text-sm font-medium text-secondary-foreground   shadow-sm ring-1 ring-primary/10",
+                        className: "inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-1.5 text-sm font-medium text-secondary-foreground shadow-sm ring-1 ring-primary/10",
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$sparkles$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Sparkles$3e$__["Sparkles"], {
                                 size: 14,
@@ -277,7 +277,7 @@ function Hero() {
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
-                        className: "max-w-3xl text-balance text-5xl font-extrabold tracking-tight   text-foreground sm:text-6xl lg:text-7xl",
+                        className: "max-w-3xl text-balance text-5xl font-extrabold tracking-tight text-foreground sm:text-6xl lg:text-7xl",
                         children: [
                             "Shop smarter,",
                             " ",
@@ -297,7 +297,7 @@ function Hero() {
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                        className: "max-w-xl text-balance text-lg leading-relaxed text-foreground/60   sm:text-xl",
+                        className: "max-w-xl text-balance text-lg leading-relaxed text-foreground/60 sm:text-xl",
                         children: "Discover a curated collection of premium products — from everyday essentials to hard-to-find favourites — delivered right to your door."
                     }, void 0, false, {
                         fileName: "[project]/components/Hero.tsx",
@@ -310,7 +310,7 @@ function Hero() {
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                 href: "/products",
                                 id: "hero-shop-now-btn",
-                                className: "group inline-flex items-center gap-2 rounded-full bg-primary   px-8 py-3.5 text-base font-semibold text-primary-foreground   shadow-lg shadow-primary/30 transition-all duration-200   hover:brightness-110 hover:-translate-y-0.5 hover:shadow-xl   hover:shadow-primary/40 focus-visible:outline-none   focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                                className: "group inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$shopping$2d$bag$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__ShoppingBag$3e$__["ShoppingBag"], {
                                         size: 18,
@@ -339,7 +339,7 @@ function Hero() {
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("a", {
                                 href: "/products",
                                 id: "hero-browse-link",
-                                className: "inline-flex items-center gap-2 rounded-full border border-border   bg-surface px-8 py-3.5 text-base font-semibold text-foreground   shadow-sm transition-all duration-200 hover:border-primary/40   hover:text-primary hover:-translate-y-0.5   focus-visible:outline-none focus-visible:ring-2   focus-visible:ring-primary focus-visible:ring-offset-2",
+                                className: "inline-flex items-center gap-2 rounded-full border border-border bg-surface px-8 py-3.5 text-base font-semibold text-foreground shadow-sm transition-all duration-200 hover:border-primary/40 hover:text-primary hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                                 children: "Browse categories"
                             }, void 0, false, {
                                 fileName: "[project]/components/Hero.tsx",
@@ -353,7 +353,7 @@ function Hero() {
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("ul", {
-                        className: "mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2   text-sm font-medium text-foreground/50",
+                        className: "mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-medium text-foreground/50",
                         "aria-label": "Trust indicators",
                         children: [
                             "Free shipping over ₹999",
