@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, useId } from "react";
+// ---------------------------------------------------------------------------
+// Razorpay global type — the script appends `window.Razorpay` at runtime.
+// ---------------------------------------------------------------------------
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: new (options: Record<string, unknown>) => { open(): void };
+  }
+}
+
+import { useState, useId, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,9 +18,12 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
+  CheckCircle2,
   Loader2,
   Package,
+  RefreshCw,
   ShoppingBag,
+  XCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -30,6 +43,21 @@ interface FormFields {
 }
 
 type FormErrors = Partial<Record<keyof FormFields, string>>;
+
+/**
+ * payment-cancelled — popup dismissed or Razorpay-level failure; order is
+ *                      still 'pending'; user can reopen the same popup.
+ * verify-failed     — popup completed but our server-side signature check
+ *                      rejected it; show error + Try Again.
+ * verifying         — POST /api/verify-razorpay-payment in flight.
+ * success           — verify returned ok; showing success UI before redirect.
+ */
+type PaymentState =
+  | { type: "idle" }
+  | { type: "verifying" }
+  | { type: "success" }
+  | { type: "payment-cancelled"; orderId: string; message: string }
+  | { type: "verify-failed"; message: string };
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -155,42 +183,257 @@ export default function CheckoutPage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [loadingRazorpay, setLoadingRazorpay] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [paymentState, setPaymentState] = useState<PaymentState>({ type: "idle" });
+
+  // Persisted Razorpay popup config so we can reopen the *same* order on retry
+  const rzpConfigRef = useRef<Record<string, unknown> | null>(null);
 
   function set(key: keyof FormFields) {
     return (value: string) => {
       setFields((prev) => ({ ...prev, [key]: value }));
-      // Clear inline error on change
       if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
     };
   }
 
+  /** Dynamically inject the Razorpay checkout.js script once. */
+  function loadRazorpayScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (window.Razorpay) { resolve(); return; }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload  = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Razorpay script."));
+      document.body.appendChild(script);
+    });
+  }
+
+  /**
+   * Opens (or re-opens) the Razorpay popup using the config stored in
+   * rzpConfigRef. Returns a Promise that:
+   *   - resolves when verify succeeds and router.push() has been called
+   *   - rejects with a typed reason so the caller can set paymentState
+   */
+  const openRazorpayPopup = useCallback(
+    (config: Record<string, unknown>): Promise<void> =>
+      new Promise((resolve, reject) => {
+        const rzp = new window.Razorpay(config);
+        rzp.open();
+        // resolve / reject are called from within handler / ondismiss
+        void resolve; // suppress unused var — they're called via the config closures
+        void reject;
+      }),
+    []
+  );
+
+  /**
+   * Build the Razorpay options object. The `handler` and `modal.ondismiss`
+   * callbacks close over `supabaseOrderId` and the `resolve`/`reject` of the
+   * enclosing Promise, so we build this fresh each time `openPopup` is called.
+   */
+  function buildRzpOptions(
+    supabaseOrderId: string,
+    razorpayOrderId: string,
+    amount: number,
+    currency: string,
+    resolve: () => void,
+    reject: (err: Error & { kind?: string }) => void
+  ): Record<string, unknown> {
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (!keyId) throw new Error("NEXT_PUBLIC_RAZORPAY_KEY_ID is not set.");
+
+    return {
+      key: keyId,
+      order_id: razorpayOrderId,
+      amount,
+      currency,
+      name: "SRMStore",
+      description: `Order #${supabaseOrderId.slice(0, 8).toUpperCase()}`,
+      prefill: {
+        name: fields.name.trim(),
+        contact: fields.phone.trim(),
+        ...(user?.email ? { email: user.email } : {}),
+      },
+      theme: { color: "#6C63FF" }, // --color-primary from design system
+
+      // ── Payment success ────────────────────────────────────────────────────
+      handler: async (response: {
+        razorpay_order_id: string;
+        razorpay_payment_id: string;
+        razorpay_signature: string;
+      }) => {
+        setPaymentState({ type: "verifying" });
+        try {
+          const verifyRes = await fetch("/api/verify-razorpay-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+            }),
+          });
+          const verifyJson = await verifyRes.json();
+
+          if (!verifyRes.ok || !verifyJson.success) {
+            // Verification rejected — signature mismatch or server error
+            const verifyErr = Object.assign(
+              new Error(verifyJson.error ?? "Payment verification failed."),
+              { kind: "verify-failed" }
+            );
+            reject(verifyErr);
+            return;
+          }
+
+          // All good — show success flash then navigate
+          setPaymentState({ type: "success" });
+          setTimeout(() => {
+            router.push(`/order-confirmation/${verifyJson.data.order_id}`);
+          }, 800); // brief moment to let the success UI render
+          resolve();
+        } catch (err) {
+          const verifyErr = Object.assign(
+            err instanceof Error ? err : new Error("Verification error."),
+            { kind: "verify-failed" }
+          );
+          reject(verifyErr);
+        }
+      },
+
+      // ── Popup dismissed / payment declined ────────────────────────────────
+      modal: {
+        ondismiss: async () => {
+          // Confirm the order is still 'pending' before telling the user to retry
+          try {
+            const statusRes = await fetch(`/api/order-status/${supabaseOrderId}`);
+            const statusJson = await statusRes.json();
+            const status: string = statusJson?.data?.status ?? "pending";
+
+            if (status === "paid") {
+              // Edge case: payment completed but handler didn't fire yet
+              setPaymentState({ type: "success" });
+              setTimeout(() => router.push(`/order-confirmation/${supabaseOrderId}`), 800);
+              resolve();
+            } else {
+              // Order still pending — let user retry the popup
+              const dismissErr = Object.assign(
+                new Error("Payment was not completed. You can try again."),
+                { kind: "payment-cancelled" }
+              );
+              reject(dismissErr);
+            }
+          } catch {
+            // Couldn't confirm status — default to showing retry
+            const dismissErr = Object.assign(
+              new Error("Payment was not completed. You can try again."),
+              { kind: "payment-cancelled" }
+            );
+            reject(dismissErr);
+          }
+        },
+      },
+    };
+  }
+
+  /**
+   * Opens a Razorpay popup for the given IDs and handles success / failure.
+   * Returns false if an error was surfaced (caller should not continue).
+   */
+  async function openPaymentPopup(
+    supabaseOrderId: string,
+    razorpayOrderId: string,
+    amount: number,
+    currency: string
+  ): Promise<boolean> {
+    setLoadingRazorpay(true);
+    await loadRazorpayScript();
+    setLoadingRazorpay(false);
+
+    setPaymentState({ type: "idle" });
+
+    return new Promise<boolean>((outerResolve) => {
+      const options = buildRzpOptions(
+        supabaseOrderId,
+        razorpayOrderId,
+        amount,
+        currency,
+        () => outerResolve(true),
+        (err: Error & { kind?: string }) => {
+          if (err.kind === "payment-cancelled") {
+            setPaymentState({
+              type: "payment-cancelled",
+              orderId: supabaseOrderId,
+              message: err.message,
+            });
+          } else {
+            // verify-failed or unknown
+            setPaymentState({ type: "verify-failed", message: err.message });
+          }
+          outerResolve(false);
+        }
+      );
+      rzpConfigRef.current = options;
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    });
+  }
+
+  /** Reopens the Razorpay popup for the pending order (retry path). */
+  async function handleRetryPayment(supabaseOrderId: string) {
+    if (!rzpConfigRef.current) return;
+    setServerError(null);
+    setPaymentState({ type: "idle" });
+
+    // Fetch a fresh Razorpay order ID (the old one might be stale)
+    setSubmitting(true);
+    try {
+      const rzpOrderRes = await fetch("/api/create-razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: supabaseOrderId }),
+      });
+      const rzpOrderJson = await rzpOrderRes.json();
+      if (!rzpOrderRes.ok || !rzpOrderJson.success) {
+        setPaymentState({
+          type: "verify-failed",
+          message: rzpOrderJson.error ?? "Failed to reopen payment.",
+        });
+        return;
+      }
+      const { razorpay_order_id, amount, currency } = rzpOrderJson.data as {
+        razorpay_order_id: string;
+        amount: number;
+        currency: string;
+      };
+      await openPaymentPopup(supabaseOrderId, razorpay_order_id, amount, currency);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // ── Main submit ────────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setServerError(null);
+    setPaymentState({ type: "idle" });
 
+    // Validation
     const validationErrors = validate(fields);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      // Focus the first error field
       const firstKey = Object.keys(validationErrors)[0] as keyof FormFields;
       document.getElementById(`${uid}-${firstKey}`)?.focus();
       return;
     }
 
-    if (!user) {
-      setServerError("You must be signed in to place an order.");
-      return;
-    }
-
-    if (items.length === 0) {
-      setServerError("Your cart is empty.");
-      return;
-    }
+    if (!user) { setServerError("You must be signed in to place an order."); return; }
+    if (items.length === 0) { setServerError("Your cart is empty."); return; }
 
     setSubmitting(true);
     try {
-      const res = await fetch("/api/orders", {
+      // Step 1 — Create Supabase order
+      const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -209,24 +452,44 @@ export default function CheckoutPage() {
           },
         }),
       });
-
-      const json = await res.json();
-
-      if (!res.ok || !json.success) {
-        setServerError(json.error ?? "Something went wrong. Please try again.");
+      const orderJson = await orderRes.json();
+      if (!orderRes.ok || !orderJson.success) {
+        setServerError(orderJson.error ?? "Failed to create order. Please try again.");
         return;
       }
+      const supabaseOrderId: string = orderJson.data.order_id;
 
-      router.push(`/order-confirmation/${json.data.order_id}`);
-    } catch {
-      setServerError("Network error. Please check your connection and try again.");
+      // Step 2 — Create Razorpay order
+      const rzpOrderRes = await fetch("/api/create-razorpay-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: supabaseOrderId }),
+      });
+      const rzpOrderJson = await rzpOrderRes.json();
+      if (!rzpOrderRes.ok || !rzpOrderJson.success) {
+        setServerError(rzpOrderJson.error ?? "Failed to initialise payment. Please try again.");
+        return;
+      }
+      const { razorpay_order_id, amount, currency } = rzpOrderJson.data as {
+        razorpay_order_id: string;
+        amount: number;
+        currency: string;
+      };
+
+      // Steps 3-5 — open popup, verify, redirect
+      setSubmitting(false); // spinner now driven by loadingRazorpay / paymentState
+      await openPaymentPopup(supabaseOrderId, razorpay_order_id, amount, currency);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      setServerError(msg);
     } finally {
       setSubmitting(false);
+      setLoadingRazorpay(false);
     }
   }
 
-  // ── Empty cart guard ──────────────────────────────────────────────────────
-  if (!cartLoading && items.length === 0) {
+  // ── Empty cart guard ───────────────────────────────────────────────────────
+  if (!cartLoading && items.length === 0 && paymentState.type === "idle") {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <Navbar />
@@ -234,9 +497,7 @@ export default function CheckoutPage() {
           <ShoppingBag size={56} className="text-primary/30" aria-hidden="true" />
           <div className="flex flex-col gap-1">
             <p className="text-lg font-semibold text-foreground">Your cart is empty</p>
-            <p className="text-sm text-foreground/50">
-              Add some products before checking out.
-            </p>
+            <p className="text-sm text-foreground/50">Add some products before checking out.</p>
           </div>
           <Link
             href="/products"
@@ -252,6 +513,189 @@ export default function CheckoutPage() {
     );
   }
 
+  // ── Payment state overlays ─────────────────────────────────────────────────
+
+  // Verifying in flight
+  if (paymentState.type === "verifying") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Navbar />
+        <main className="flex flex-1 flex-col items-center justify-center gap-5 px-4 text-center">
+          <Loader2
+            size={48}
+            className="animate-spin text-primary"
+            aria-hidden="true"
+          />
+          <p className="text-lg font-semibold text-foreground">Verifying payment…</p>
+          <p className="text-sm text-foreground/50">
+            Please wait while we confirm your payment with Razorpay.
+          </p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Payment verified — brief success flash before router.push fires
+  if (paymentState.type === "success") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Navbar />
+        <main className="flex flex-1 flex-col items-center justify-center gap-5 px-4 text-center">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-full
+              bg-success/10 ring-4 ring-success/20"
+          >
+            <CheckCircle2
+              size={40}
+              className="text-success"
+              aria-hidden="true"
+              strokeWidth={1.75}
+            />
+          </div>
+          <p className="text-xl font-bold text-foreground">Payment successful!</p>
+          <p className="text-sm text-foreground/50">
+            Redirecting you to your order confirmation…
+          </p>
+          <Loader2 size={18} className="animate-spin text-primary" aria-hidden="true" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Popup dismissed — order still pending, show retry UI
+  if (paymentState.type === "payment-cancelled") {
+    const { orderId, message } = paymentState;
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Navbar />
+        <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-full
+              bg-muted ring-4 ring-border"
+          >
+            <XCircle
+              size={40}
+              className="text-foreground/40"
+              aria-hidden="true"
+              strokeWidth={1.75}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xl font-bold text-foreground">Payment not completed</p>
+            <p className="max-w-sm text-sm text-foreground/60">{message}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              id="checkout-retry-payment-btn"
+              type="button"
+              onClick={() => handleRetryPayment(orderId)}
+              disabled={submitting || loadingRazorpay}
+              aria-busy={submitting || loadingRazorpay}
+              className="group inline-flex items-center gap-2 rounded-full bg-primary
+                px-7 py-3.5 text-sm font-semibold text-primary-foreground
+                shadow-lg shadow-primary/30 transition-all duration-200
+                hover:brightness-110 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting || loadingRazorpay ? (
+                <>
+                  <Loader2 size={16} aria-hidden="true" className="animate-spin" />
+                  Opening payment…
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={15} aria-hidden="true" />
+                  Retry payment
+                </>
+              )}
+            </button>
+
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border
+                bg-surface px-6 py-3.5 text-sm font-semibold text-foreground
+                transition-all duration-200 hover:border-primary/40 hover:text-primary"
+            >
+              Back to products
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Verify-failed — signature mismatch or server error
+  if (paymentState.type === "verify-failed") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Navbar />
+        <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 text-center">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-full
+              bg-error/10 ring-4 ring-error/20"
+          >
+            <XCircle
+              size={40}
+              className="text-error"
+              aria-hidden="true"
+              strokeWidth={1.75}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xl font-bold text-foreground">Payment verification failed</p>
+            <p className="max-w-sm text-sm text-foreground/60">{paymentState.message}</p>
+          </div>
+
+          <div
+            role="alert"
+            className="flex max-w-sm items-start gap-2 rounded-xl border border-error/20
+              bg-error/5 px-4 py-3 text-left text-sm font-medium text-error"
+          >
+            <AlertCircle size={15} aria-hidden="true" className="mt-0.5 shrink-0" />
+            If your account was charged, please contact support — your order
+            will not be lost.
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              id="checkout-try-again-btn"
+              type="button"
+              onClick={() => {
+                setPaymentState({ type: "idle" });
+                setServerError(null);
+              }}
+              className="group inline-flex items-center gap-2 rounded-full bg-primary
+                px-7 py-3.5 text-sm font-semibold text-primary-foreground
+                shadow-lg shadow-primary/30 transition-all duration-200
+                hover:brightness-110 hover:-translate-y-0.5
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <ArrowRight size={15} aria-hidden="true" />
+              Try again
+            </button>
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border
+                bg-surface px-6 py-3.5 text-sm font-semibold text-foreground
+                transition-all duration-200 hover:border-primary/40 hover:text-primary"
+            >
+              Back to products
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ── Normal checkout form ───────────────────────────────────────────────────
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
@@ -379,7 +823,6 @@ export default function CheckoutPage() {
               <ul className="flex flex-col divide-y divide-border">
                 {items.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 py-3">
-                    {/* Product image */}
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
                       {item.products?.image_url && (
                         <Image
@@ -391,16 +834,12 @@ export default function CheckoutPage() {
                         />
                       )}
                     </div>
-                    {/* Name + qty */}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">
                         {item.products?.name ?? "Product"}
                       </p>
-                      <p className="text-xs text-foreground/50">
-                        Qty {item.quantity}
-                      </p>
+                      <p className="text-xs text-foreground/50">Qty {item.quantity}</p>
                     </div>
-                    {/* Line total */}
                     <p className="shrink-0 text-sm font-semibold text-foreground">
                       ₹{((item.products?.price ?? 0) * item.quantity).toLocaleString("en-IN")}
                     </p>
@@ -426,19 +865,17 @@ export default function CheckoutPage() {
                 </div>
                 <div className="mt-1 flex justify-between border-t border-border pt-3 text-base font-extrabold text-foreground">
                   <span>Total</span>
-                  <span className="text-primary">
-                    ₹{orderTotal.toLocaleString("en-IN")}
-                  </span>
+                  <span className="text-primary">₹{orderTotal.toLocaleString("en-IN")}</span>
                 </div>
               </div>
 
-              {/* Submit button */}
+              {/* Submit / payment button */}
               <button
                 form="checkout-form"
                 id="checkout-submit-btn"
                 type="submit"
-                disabled={submitting || cartLoading}
-                aria-busy={submitting}
+                disabled={submitting || cartLoading || loadingRazorpay}
+                aria-busy={submitting || loadingRazorpay}
                 className="group mt-1 inline-flex w-full items-center justify-center gap-2
                   rounded-full bg-primary px-6 py-4 text-base font-semibold
                   text-primary-foreground shadow-lg shadow-primary/30
@@ -447,7 +884,12 @@ export default function CheckoutPage() {
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
                   disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0 disabled:shadow-none"
               >
-                {submitting ? (
+                {loadingRazorpay ? (
+                  <>
+                    <Loader2 size={18} aria-hidden="true" className="animate-spin" />
+                    Opening payment…
+                  </>
+                ) : submitting ? (
                   <>
                     <Loader2 size={18} aria-hidden="true" className="animate-spin" />
                     Placing order…
