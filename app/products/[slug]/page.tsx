@@ -192,7 +192,7 @@ export default async function ProductDetailPage({
               <hr className="border-border" />
 
               {/* Quantity selector + Add to Cart — client island */}
-              <AddToCartControls productName={product.name} />
+              <AddToCartControls productId={product.id} productName={product.name} />
 
               {/* Trust strip */}
               <ul className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs font-medium text-foreground/40">

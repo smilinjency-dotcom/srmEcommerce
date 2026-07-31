@@ -13,18 +13,18 @@ import {
 } from "lucide-react";
 import { signInWithGoogle, signOutUser } from "@/lib/firebase";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/contexts/CartContext";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products" },
 ];
 
-const CART_COUNT = 0;
-
 export default function Navbar() {
   const [menuOpen, setMenuOpen]           = useState(false);
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [signingIn, setSigningIn]         = useState(false);
+  const { itemCount, openDrawer }         = useCart();
   const dropdownRef                       = useRef<HTMLDivElement>(null);
 
   const { user, loading } = useAuth();
@@ -242,19 +242,21 @@ export default function Navbar() {
           {/* Cart icon */}
           <button
             type="button"
-            aria-label={`Open cart, ${CART_COUNT} items`}
+            id="navbar-cart-btn"
+            aria-label={`Open cart, ${itemCount} item${itemCount !== 1 ? "s" : ""}`}
+            onClick={openDrawer}
             className="relative flex h-10 w-10 items-center justify-center rounded-full text-foreground/70
                        transition-colors hover:bg-secondary hover:text-primary focus-visible:outline-none
                        focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ShoppingCart size={22} strokeWidth={2} aria-hidden="true" />
-            {CART_COUNT > 0 && (
+            {itemCount > 0 && (
               <span
                 className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center
                            rounded-full bg-accent text-[10px] font-bold leading-none text-white"
                 aria-live="polite"
               >
-                {CART_COUNT > 99 ? "99+" : CART_COUNT}
+                {itemCount > 99 ? "99+" : itemCount}
               </span>
             )}
           </button>
