@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft, Tag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import type { Product } from "@/app/api/products/[slug]/route";
+import type { Product } from "@/types/supabase";
 import AddToCartControls from "./AddToCartControls";
 
 // ---------------------------------------------------------------------------
